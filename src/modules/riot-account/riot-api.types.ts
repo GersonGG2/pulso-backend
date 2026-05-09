@@ -10,10 +10,14 @@ export interface RiotAccountDto {
   tagLine: string;
 }
 
-/** Response from Summoner-V4 (platform routing: la1/la2/na1...). */
+/**
+ * Response from Summoner-V4 (platform routing: la1/la2/na1...).
+ * Note: Riot deprecated `id` (summonerId) and `accountId` in late 2024 for
+ * by-puuid calls. They may be undefined — use puuid for follow-up calls.
+ */
 export interface RiotSummonerDto {
-  id: string;
-  accountId: string;
+  id?: string;
+  accountId?: string;
   puuid: string;
   profileIconId: number;
   revisionDate: number;

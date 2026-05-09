@@ -72,7 +72,7 @@ describe('RiotAccountService', () => {
           useValue: {
             getAccountByRiotId: jest.fn(),
             getSummonerByPuuid: jest.fn(),
-            getLeagueEntries: jest.fn(),
+            getLeagueEntriesByPuuid: jest.fn(),
           },
         },
       ],
@@ -187,7 +187,7 @@ describe('RiotAccountService', () => {
         revisionDate: 0,
         summonerLevel: 312,
       });
-      riot.getLeagueEntries.mockResolvedValue([
+      riot.getLeagueEntriesByPuuid.mockResolvedValue([
         {
           leagueId: 'lg1',
           queueType: 'RANKED_SOLO_5x5',

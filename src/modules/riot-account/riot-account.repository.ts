@@ -28,6 +28,10 @@ export class RiotAccountRepository {
     });
   }
 
+  update(userId: string, data: Prisma.RiotAccountUpdateInput): Promise<RiotAccount> {
+    return this.prisma.riotAccount.update({ where: { userId }, data });
+  }
+
   delete(userId: string): Promise<RiotAccount> {
     return this.prisma.riotAccount.delete({ where: { userId } });
   }

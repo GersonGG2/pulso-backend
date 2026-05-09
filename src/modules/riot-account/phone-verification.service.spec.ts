@@ -51,7 +51,7 @@ describe('PhoneVerificationService', () => {
           provide: RiotAccountRepository,
           useValue: {
             findByUserId: jest.fn(),
-            upsert: jest.fn(),
+            update: jest.fn(),
           },
         },
         {
@@ -127,21 +127,20 @@ describe('PhoneVerificationService', () => {
       await expect(
         service.verifyCode('user_1', '+525512345678', 'wrong'),
       ).rejects.toBeInstanceOf(BadRequestException);
-      expect(accounts.upsert).not.toHaveBeenCalled();
+      expect(accounts.update).not.toHaveBeenCalled();
     });
 
     it('persists phone and smsVerified=true on approved code', async () => {
       accounts.findByUserId.mockResolvedValue(buildAccount());
       twilio.check.mockResolvedValue({ approved: true, status: 'approved' });
-      accounts.upsert.mockResolvedValue(
+      accounts.update.mockResolvedValue(
         buildAccount({ smsVerified: true, phoneNumber: '+525512345678' }),
       );
 
       const result = await service.verifyCode('user_1', '+525512345678', '123456');
 
-      expect(accounts.upsert).toHaveBeenCalledWith(
+      expect(accounts.update).toHaveBeenCalledWith(
         'user_1',
-        expect.anything(),
         expect.objectContaining({
           phoneNumber: '+525512345678',
           smsVerified: true,

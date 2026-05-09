@@ -51,7 +51,7 @@ model RiotAccount {
   user            User      @relation(fields: [userId], references: [id])
 
   puuid           String    @unique
-  summonerId      String
+  summonerId      String?
   region          String
   gameName        String
   tagLine         String
@@ -82,7 +82,7 @@ model RiotLinkAttempt {
   user            User     @relation(fields: [userId], references: [id])
 
   puuid           String
-  summonerId      String
+  summonerId      String?
   gameName        String
   tagLine         String
   region          String

@@ -76,7 +76,7 @@ export class RiotAccountService {
 
     await this.repo.upsertAttempt(userId, {
       puuid: account.puuid,
-      summonerId: summoner.id,
+      summonerId: summoner.id ?? null,
       gameName: account.gameName,
       tagLine: account.tagLine,
       region,
@@ -121,19 +121,20 @@ export class RiotAccountService {
     }
 
     // Pull rank for anti-smurf snapshot
-    const entries = await this.riot.getLeagueEntries(region, summoner.id);
+    const entries = await this.riot.getLeagueEntriesByPuuid(region, attempt.puuid);
     const solo = entries.find((e) => e.queueType === 'RANKED_SOLO_5x5');
     const currentTier = solo?.tier ?? null;
     const currentRank = solo?.rank ?? null;
     const currentLP = solo?.leaguePoints ?? null;
     const highestRankEver = this.computeHighestRank(entries);
 
+    const summonerId = summoner.id ?? attempt.summonerId ?? null;
     const created = await this.repo.upsert(
       userId,
       {
         user: { connect: { id: userId } },
         puuid: attempt.puuid,
-        summonerId: summoner.id,
+        summonerId,
         gameName: attempt.gameName,
         tagLine: attempt.tagLine,
         region: attempt.region,
@@ -144,7 +145,7 @@ export class RiotAccountService {
         highestRankEver,
       },
       {
-        summonerId: summoner.id,
+        summonerId,
         summonerLevel: summoner.summonerLevel,
         currentTier,
         currentRank,

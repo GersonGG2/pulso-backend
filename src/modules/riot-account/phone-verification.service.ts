@@ -63,15 +63,11 @@ export class PhoneVerificationService {
       throw new BadRequestException('Invalid or expired code');
     }
 
-    await this.accounts.upsert(
-      userId,
-      {} as never, // create branch unreachable: account exists by precondition above
-      {
-        phoneNumber,
-        smsVerified: true,
-        smsVerifiedAt: new Date(),
-      },
-    );
+    await this.accounts.update(userId, {
+      phoneNumber,
+      smsVerified: true,
+      smsVerifiedAt: new Date(),
+    });
 
     this.logger.log(`Phone verified for user ${userId}`);
     return { verified: true };

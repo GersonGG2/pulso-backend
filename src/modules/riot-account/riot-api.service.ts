@@ -57,11 +57,15 @@ export class RiotApiService {
   // League-V4
   // -----------------------------
 
-  async getLeagueEntries(
+  /**
+   * Fetch ranked entries by PUUID. Preferred over the deprecated by-summoner
+   * variant since Riot phased out summonerId in late 2024.
+   */
+  async getLeagueEntriesByPuuid(
     region: PulsoRegion,
-    summonerId: string,
+    puuid: string,
   ): Promise<RiotLeagueEntryDto[]> {
-    const path = `/lol/league/v4/entries/by-summoner/${encodeURIComponent(summonerId)}`;
+    const path = `/lol/league/v4/entries/by-puuid/${encodeURIComponent(puuid)}`;
     return (await this.get<RiotLeagueEntryDto[]>(this.platformBase(region), path)) ?? [];
   }
 
