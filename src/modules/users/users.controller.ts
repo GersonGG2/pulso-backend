@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -6,14 +6,13 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { User } from '@prisma/client';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrivateUserResponseDto, UserResponseDto } from './dto/user-response.dto';
 
-/**
- * NOTE: Endpoints marked "TODO auth" use a temporary `x-user-id` header
- * for development. Replace with Clerk JWT guard once `auth` module lands.
- */
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
@@ -23,8 +22,7 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get the authenticated user (private fields included)' })
   @ApiOkResponse({ type: PrivateUserResponseDto })
-  async getMe(@Headers('x-user-id') userId: string): Promise<PrivateUserResponseDto> {
-    const user = await this.users.getById(userId);
+  async getMe(@CurrentUser() user: User): Promise<PrivateUserResponseDto> {
     return this.toPrivate(user);
   }
 
@@ -33,13 +31,14 @@ export class UsersController {
   @ApiOperation({ summary: 'Update the authenticated user profile' })
   @ApiOkResponse({ type: PrivateUserResponseDto })
   async updateMe(
-    @Headers('x-user-id') userId: string,
+    @CurrentUser('id') userId: string,
     @Body() dto: UpdateUserDto,
   ): Promise<PrivateUserResponseDto> {
-    const user = await this.users.updateProfile(userId, dto);
-    return this.toPrivate(user);
+    const updated = await this.users.updateProfile(userId, dto);
+    return this.toPrivate(updated);
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Get a user public profile by id' })
   @ApiParam({ name: 'id', example: 'clx123abc456' })
@@ -49,6 +48,7 @@ export class UsersController {
     return this.toPublic(user);
   }
 
+  @Public()
   @Get('by-username/:username')
   @ApiOperation({ summary: 'Get a user public profile by username' })
   @ApiParam({ name: 'username', example: 'faker_mx' })
@@ -62,14 +62,7 @@ export class UsersController {
   // Mappers
   // -----------------------------
 
-  private toPublic(user: {
-    id: string;
-    username: string;
-    displayName: string;
-    avatarUrl: string | null;
-    role: UserResponseDto['role'];
-    createdAt: Date;
-  }): UserResponseDto {
+  private toPublic(user: User): UserResponseDto {
     return {
       id: user.id,
       username: user.username,
@@ -80,15 +73,7 @@ export class UsersController {
     };
   }
 
-  private toPrivate(user: {
-    id: string;
-    username: string;
-    displayName: string;
-    avatarUrl: string | null;
-    role: UserResponseDto['role'];
-    createdAt: Date;
-    email: string;
-  }): PrivateUserResponseDto {
+  private toPrivate(user: User): PrivateUserResponseDto {
     return {
       ...this.toPublic(user),
       email: user.email,
