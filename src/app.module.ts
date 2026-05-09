@@ -12,6 +12,7 @@ import { TeamsModule } from './modules/teams/teams.module';
 import { OrganizersModule } from './modules/organizers/organizers.module';
 import { TournamentsModule } from './modules/tournaments/tournaments.module';
 import { TournamentRegistrationsModule } from './modules/tournament-registrations/tournament-registrations.module';
+import { MatchesModule } from './modules/matches/matches.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -46,6 +47,7 @@ import { validateEnv } from './config/env.validation';
     OrganizersModule,
     TournamentsModule,
     TournamentRegistrationsModule,
+    MatchesModule,
   ],
 })
 export class AppModule {}
