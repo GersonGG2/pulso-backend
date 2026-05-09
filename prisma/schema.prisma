@@ -26,9 +26,10 @@ model User {
   avatarUrl   String?
   role        UserRole @default(PLAYER)
 
-  player      Player?
-  organizer   Organizer?
-  riotAccount RiotAccount?
+  player        Player?
+  organizer     Organizer?
+  riotAccount   RiotAccount?
+  linkAttempt   RiotLinkAttempt?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -54,6 +55,7 @@ model RiotAccount {
   region          String
   gameName        String
   tagLine         String
+  summonerLevel   Int?
 
   highestRankEver String?
   currentTier     String?
@@ -69,6 +71,29 @@ model RiotAccount {
 
   @@index([puuid])
   @@index([region])
+}
+
+/// Short-lived record for icon-based Riot account verification.
+/// Created when a user starts linking their Riot account; deleted on success or expiry.
+/// One per user (unique userId) — restarting the flow overwrites the previous attempt.
+model RiotLinkAttempt {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+
+  puuid           String
+  summonerId      String
+  gameName        String
+  tagLine         String
+  region          String
+
+  expectedIconId  Int
+  originalIconId  Int
+
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([expiresAt])
 }
 
 // =====================================================
