@@ -17,6 +17,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { OrganizersRepository } from '../organizers/organizers.repository';
 import { TournamentRegistrationsRepository } from '../tournament-registrations/tournament-registrations.repository';
 import { TournamentsRepository } from '../tournaments/tournaments.repository';
+import { ZScoreService } from '../zscore/zscore.service';
 import { ReportMatchDto } from './dto/report-match.dto';
 import { MatchWithParticipants, MatchesRepository } from './matches.repository';
 import {
@@ -39,6 +40,7 @@ export class MatchesService {
     private readonly tournaments: TournamentsRepository,
     private readonly registrations: TournamentRegistrationsRepository,
     private readonly organizers: OrganizersRepository,
+    private readonly zscore: ZScoreService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -168,8 +170,9 @@ export class MatchesService {
       finishedAt: new Date(),
     });
 
+    await this.zscore.applyMatchResult(matchId);
     await this.advanceBracket(match, winnerParticipant.playerId, tournament.startsAt);
-    return updated;
+    return this.matches.findById(matchId).then((m) => m ?? updated);
   }
 
   // -----------------------------

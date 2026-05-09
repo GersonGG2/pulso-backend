@@ -13,6 +13,7 @@ import { OrganizersModule } from './modules/organizers/organizers.module';
 import { TournamentsModule } from './modules/tournaments/tournaments.module';
 import { TournamentRegistrationsModule } from './modules/tournament-registrations/tournament-registrations.module';
 import { MatchesModule } from './modules/matches/matches.module';
+import { ZScoreModule } from './modules/zscore/zscore.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -48,6 +49,7 @@ import { validateEnv } from './config/env.validation';
     TournamentsModule,
     TournamentRegistrationsModule,
     MatchesModule,
+    ZScoreModule,
   ],
 })
 export class AppModule {}
