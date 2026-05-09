@@ -9,6 +9,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { RiotAccountModule } from './modules/riot-account/riot-account.module';
 import { PlayersModule } from './modules/players/players.module';
 import { TeamsModule } from './modules/teams/teams.module';
+import { OrganizersModule } from './modules/organizers/organizers.module';
+import { TournamentsModule } from './modules/tournaments/tournaments.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -40,6 +42,8 @@ import { validateEnv } from './config/env.validation';
     RiotAccountModule,
     PlayersModule,
     TeamsModule,
+    OrganizersModule,
+    TournamentsModule,
   ],
 })
 export class AppModule {}
