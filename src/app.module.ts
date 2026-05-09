@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
+import { UsersModule } from './modules/users/users.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -30,6 +31,7 @@ import { validateEnv } from './config/env.validation';
     ]),
     PrismaModule,
     HealthModule,
+    UsersModule,
   ],
 })
 export class AppModule {}
