@@ -1,0 +1,449 @@
+// =====================================================
+// Pulso — Prisma Schema (initial)
+// Source of truth for the DB. Edit here, then run:
+//   pnpm prisma:migrate
+// =====================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================
+// Identity & Auth
+// =====================================================
+
+model User {
+  id          String   @id @default(cuid())
+  clerkUserId String   @unique
+  email       String   @unique
+  username    String   @unique
+  displayName String
+  avatarUrl   String?
+  role        UserRole @default(PLAYER)
+
+  player      Player?
+  organizer   Organizer?
+  riotAccount RiotAccount?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([role])
+}
+
+enum UserRole {
+  PLAYER
+  ORGANIZER
+  ADMIN
+  OPERATOR
+  SCOUT
+}
+
+model RiotAccount {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+
+  puuid           String    @unique
+  summonerId      String
+  region          String
+  gameName        String
+  tagLine         String
+
+  highestRankEver String?
+  currentTier     String?
+  currentRank     String?
+  currentLP       Int?
+
+  smsVerified     Boolean   @default(false)
+  smsVerifiedAt   DateTime?
+  phoneNumber     String?
+
+  linkedAt        DateTime  @default(now())
+  lastSyncedAt    DateTime  @default(now())
+
+  @@index([puuid])
+  @@index([region])
+}
+
+// =====================================================
+// Player & Team
+// =====================================================
+
+model Player {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id])
+
+  primaryRole       LolRole?
+  secondaryRole     LolRole?
+  country           String
+  city              String?
+  birthDate         DateTime?
+
+  zScore            Int       @default(1500)
+  zScoreVolatility  Float     @default(0.06)
+  zScoreDeviation   Float     @default(350)
+  tier              PlayerTier @default(AMATEUR)
+
+  isPro             Boolean   @default(false)
+  proExpiresAt      DateTime?
+
+  recruitable       Boolean   @default(true)
+  recruitablePrefs  Json?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  teamMemberships   TeamMember[]
+  registrations     TournamentRegistration[]
+  matchParticipants MatchParticipant[]
+  zScoreEvents      ZScoreEvent[]
+
+  @@index([zScore])
+  @@index([tier])
+  @@index([country, primaryRole])
+  @@index([recruitable, tier])
+}
+
+enum LolRole {
+  TOP
+  JUNGLE
+  MID
+  ADC
+  SUPPORT
+}
+
+enum PlayerTier {
+  AMATEUR
+  COMPETIDOR
+  SEMI_PRO
+  PRO
+}
+
+model Team {
+  id            String   @id @default(cuid())
+  name          String
+  tag           String   @unique
+  logoUrl       String?
+  country       String
+
+  members       TeamMember[]
+  registrations TournamentRegistration[]
+
+  createdAt     DateTime @default(now())
+}
+
+model TeamMember {
+  id        String    @id @default(cuid())
+  teamId    String
+  team      Team      @relation(fields: [teamId], references: [id])
+  playerId  String
+  player    Player    @relation(fields: [playerId], references: [id])
+  role      TeamRole
+  isCaptain Boolean   @default(false)
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+
+  @@unique([teamId, playerId])
+}
+
+enum TeamRole {
+  STARTER
+  SUBSTITUTE
+  COACH
+  MANAGER
+}
+
+// =====================================================
+// Tournaments & Matches
+// =====================================================
+
+model Organizer {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id])
+
+  organizationName      String
+  rfc                   String?
+  contactEmail          String
+  contactPhone          String?
+  website               String?
+
+  verified              Boolean  @default(false)
+  verifiedAt            DateTime?
+  verifiedBy            String?
+
+  payoutMethodEncrypted String?
+
+  tournaments           Tournament[]
+
+  createdAt             DateTime @default(now())
+}
+
+model Tournament {
+  id                   String           @id @default(cuid())
+  name                 String
+  slug                 String           @unique
+  description          String
+  bannerUrl            String?
+
+  organizerId          String
+  organizer            Organizer        @relation(fields: [organizerId], references: [id])
+
+  game                 Game             @default(LEAGUE_OF_LEGENDS)
+  format               TournamentFormat
+  modality             Modality
+  bracketType          BracketType
+
+  minTier              PlayerTier?
+  maxTier              PlayerTier?
+  region               String
+
+  maxParticipants      Int
+  entryFeeMxnCents     Int              @default(0)
+  prizePoolJson        Json?
+
+  registrationOpensAt  DateTime
+  registrationClosesAt DateTime
+  startsAt             DateTime
+  endsAt               DateTime?
+
+  status               TournamentStatus @default(DRAFT)
+  rulesetVersion       String
+
+  registrations        TournamentRegistration[]
+  matches              Match[]
+
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([status])
+  @@index([region, status])
+  @@index([startsAt])
+}
+
+enum Game {
+  LEAGUE_OF_LEGENDS
+}
+
+enum TournamentFormat {
+  SINGLE_ELIM
+  DOUBLE_ELIM
+  ROUND_ROBIN
+  SWISS
+  GROUP_STAGE_PLAYOFFS
+}
+
+enum Modality {
+  SOLO_1V1
+  TEAM_5V5
+  ARAM
+}
+
+enum BracketType {
+  SEEDED
+  RANDOM
+  POD_BASED
+}
+
+enum TournamentStatus {
+  DRAFT
+  PUBLISHED
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model TournamentRegistration {
+  id           String             @id @default(cuid())
+  tournamentId String
+  tournament   Tournament         @relation(fields: [tournamentId], references: [id])
+
+  playerId     String?
+  player       Player?            @relation(fields: [playerId], references: [id])
+  teamId       String?
+  team         Team?              @relation(fields: [teamId], references: [id])
+
+  status       RegistrationStatus @default(PENDING_PAYMENT)
+  paidAt       DateTime?
+  paymentRef   String?
+
+  checkedInAt  DateTime?
+  registeredAt DateTime           @default(now())
+
+  @@unique([tournamentId, playerId])
+  @@unique([tournamentId, teamId])
+}
+
+enum RegistrationStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CHECKED_IN
+  WITHDRAWN
+  DISQUALIFIED
+}
+
+model Match {
+  id               String      @id @default(cuid())
+  tournamentId     String
+  tournament       Tournament  @relation(fields: [tournamentId], references: [id])
+
+  round            Int
+  bracketPosition  String
+
+  scheduledAt      DateTime
+  startedAt        DateTime?
+  finishedAt       DateTime?
+
+  status           MatchStatus @default(SCHEDULED)
+
+  riotMatchId      String?
+  tournamentCode   String?
+  riotProviderId   Int?
+  riotTournamentId Int?
+
+  winnerSide       String?
+
+  participants     MatchParticipant[]
+
+  createdAt        DateTime    @default(now())
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([riotMatchId])
+}
+
+enum MatchStatus {
+  SCHEDULED
+  CODE_GENERATED
+  IN_LOBBY
+  IN_PROGRESS
+  COMPLETED
+  DISPUTED
+  CANCELLED
+}
+
+model MatchParticipant {
+  id             String   @id @default(cuid())
+  matchId        String
+  match          Match    @relation(fields: [matchId], references: [id])
+  playerId       String
+  player         Player   @relation(fields: [playerId], references: [id])
+
+  side           String
+  role           LolRole?
+  championPlayed String?
+
+  kills          Int?
+  deaths         Int?
+  assists        Int?
+  cs             Int?
+  visionScore    Int?
+  goldEarned     Int?
+  damageDealt    Int?
+  goldDiff15     Int?
+  csPerMin       Float?
+
+  win            Boolean?
+  zScoreDelta    Int?
+
+  @@unique([matchId, playerId])
+}
+
+// =====================================================
+// ZScore audit
+// =====================================================
+
+model ZScoreEvent {
+  id           String       @id @default(cuid())
+  playerId     String
+  player       Player       @relation(fields: [playerId], references: [id])
+
+  source       ZScoreSource
+  delta        Int
+  newScore     Int
+
+  matchId      String?
+  tournamentId String?
+
+  metadata     Json?
+
+  createdAt    DateTime     @default(now())
+
+  @@index([playerId, createdAt])
+}
+
+enum ZScoreSource {
+  MATCH_RESULT
+  TOURNAMENT_PLACEMENT
+  PERFORMANCE_BONUS
+  STREAK_MULTIPLIER
+  INACTIVITY_DECAY
+  ADMIN_ADJUSTMENT
+}
+
+// =====================================================
+// Subscriptions
+// =====================================================
+
+model Subscription {
+  id               String             @id @default(cuid())
+  userId           String             @unique
+  plan             SubscriptionPlan
+  status           SubscriptionStatus
+  provider         String
+  providerSubId    String             @unique
+
+  startedAt        DateTime
+  currentPeriodEnd DateTime
+  cancelledAt      DateTime?
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+enum SubscriptionPlan {
+  PRO_PLAYER
+  RECRUITER_ACCESS
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+// =====================================================
+// Audit
+// =====================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actorRole  UserRole
+
+  action     String
+  entityType String
+  entityId   String
+
+  before     Json?
+  after      Json?
+
+  ipAddress  String?
+  userAgent  String?
+
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
